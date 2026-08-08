@@ -26,6 +26,22 @@ shasum -a 256 -c SHA256SUMS
 sha256sum -c SHA256SUMS
 ```
 
+## 界面预览
+
+**TUI 拨测演示**（终端界面动图）
+
+| 场景 | 演示 |
+|------|------|
+| 启动 | ![startup](demos/out/startup.gif) |
+| 查询 | ![query](demos/out/query.gif) |
+| 对比 | ![compare](demos/out/compare.gif) |
+
+**Web 界面预览**
+
+| 深色模式 | 浅色模式 |
+|------|------|
+| ![preview-dark](demos/web-preview/preview-dark.png) | ![preview-light](demos/web-preview/preview-light.png) |
+
 ## 使用文档
 
 - [使用说明（拨测列表格式 / CLI / TUI / Web）](USAGE.md)
