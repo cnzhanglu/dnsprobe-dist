@@ -142,6 +142,11 @@ example.com +brief +watch +interval=2s +qps=5
 # 或：
 export DNSPROBE_TOKEN='your-secret'
 ./dnsprobe serve --listen 0.0.0.0:8080
+
+# 持久库选项（默认已开启）
+#   --store ~/.dnsprobe/runs.db     拨测结果单文件库（off=关闭，退回纯内存）
+#   --store-retention 168h          持久库任务保留时长（默认 7 天；0=不自动清理）
+#   --job-max 200 / --job-max-age 24h   内存保留策略（防止长驻进程内存无限增长）
 ```
 
 在监听地址打开 UI（如 `http://127.0.0.1:8080`）。API 前缀 `/api/v1`。更完整的字段说明见 **[docs/api.md](docs/api.md)**。
@@ -157,16 +162,20 @@ export DNSPROBE_TOKEN='your-secret'
 
 ### API 概要
 
-**Jobs**（进程内内存；重启丢失）
+**Jobs**（批量/持续任务自动落持久库，可回查全历史并带每行拨测时间；单条域名查询不落库）
 
-- `GET /api/v1/jobs` — 列出近期 jobs
+- `GET /api/v1/jobs` — 列出任务（内存运行中优先 + 持久库历史；含 `rows`/`rounds` 记录数）
 - `POST /api/v1/jobs` — 创建（JSON 或 multipart）
-- `GET /api/v1/jobs/{id}` — 状态；`?include=results` 带结果
+- `GET /api/v1/jobs/{id}` — 状态；`?include=results` 带结果（持久库任务返回全历史，行含 `at`）
+- `GET /api/v1/jobs/{id}/rounds` — 轮次摘要
 - `GET /api/v1/jobs/{id}/events` — SSE
-- `GET /api/v1/jobs/{id}/export.csv` / `export.json` — 下载
+- `GET /api/v1/jobs/{id}/export.csv` / `export.json` — 下载全历史（持续任务 CSV 带「轮次」列、行尾「时间」列）
 - `POST /api/v1/jobs/{id}/cancel` — 取消（含 Continuous）
+- `DELETE /api/v1/jobs/{id}` — 手动清理（内存 + 持久库）
 
 创建常用字段：`servers`（主 DNS，数组或逗号串；优先于 `dns1`/`dns2`）、`mode`（`query`/`compare`/`expect`）、`name`+`type` 或 `list`、`expected`（expect+单域名必填）、`qps`（默认 **10**，`0`=不限）、`continuous` + `interval_ms`、`workers`、协议选项、可选 `output_dir`（服务端落盘）。
+
+Web 记录列表：**运行中 / 已完成分栏**，展示任务开始时间、记录数（行数/轮次）、查询模式。
 
 **Tasks**（永久定义）
 
@@ -184,7 +193,7 @@ export DNSPROBE_TOKEN='your-secret'
 | 并发 | Qt 线程式 worker | 共享 job runner 上的 worker 池（默认 20） |
 | UI | 桌面 Qt | CLI + 终端 TUI + 嵌入式 Web/SSE |
 | 远程 | 非一等 HTTP 服务 | `serve` + Bearer token，默认仅本机 |
-| 任务存储 | 会话 / UI 状态 | 运行 jobs：进程内存；永久任务：`~/.dnsprobe/tasks`（CLI/TUI/Web） |
+| 任务存储 | 会话 / UI 状态 | 运行 jobs：内存 + 持久库（`~/.dnsprobe/runs.db`，批量/持续落库、7 天清理）；永久任务：`~/.dnsprobe/tasks`（CLI/TUI/Web） |
 | Rdata 文本 | dnspython `rdata.to_text()` | miekg/dns 展示形式（通常等价；边界情况可能不同） |
 
 本版本不包含：DoH/DoT、DNSSEC 校验、多用户账号、zonefile→拨测列表转换。
