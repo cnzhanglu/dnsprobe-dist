@@ -28,6 +28,7 @@ sha256sum -c SHA256SUMS
 
 ## 使用文档
 
+- [使用说明（拨测列表格式 / CLI / TUI / Web）](USAGE.md)
 - [CLI 命令参考](CLI_COMMANDS.md)
 - [TUI 命令参考](TUI_COMMANDS.md)
 - [TUI 输出控制](TUI_OUTPUT_CONTROL.md)
