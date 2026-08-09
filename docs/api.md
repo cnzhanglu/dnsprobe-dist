@@ -22,6 +22,8 @@
 
 > **持久库**（`dnsprobe serve --store`，默认 `~/.dnsprobe/runs.db`，bbolt 单文件）：批量/持续任务自动落库，可回查全历史并带每行拨测时间（`at`）；单条域名查询不落库。`--store off` 关闭（退回纯内存）。持久库默认 7 天自动清理（`--store-retention` 可调，`0` 不清理）。
 >
+> job 列表/详情附带 `name`（拨测对象：首条域名 + 条数）、`rows`/`rounds`（记录数/轮次）、`rounds_info`/`rounds_results`（轮次摘要/按轮结果）；由永久任务触发的 job 额外带 `task_name`/`task_id`（来源任务）。
+>
 > **内存保留策略**：job 记录默认最多保留 **200** 个，结束态超过 **24h** 自动淘汰（`--job-max / --job-max-age` 可调，设 `0` 不限制）；运行中的任务不受影响。
 
 ### `POST /jobs` 常用字段
