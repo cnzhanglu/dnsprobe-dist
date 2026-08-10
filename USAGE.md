@@ -164,18 +164,17 @@ export DNSPROBE_TOKEN='your-secret'
 
 **Jobs**（批量/持续任务自动落持久库，可回查全历史并带每行拨测时间；单条域名查询不落库）
 
-- `GET /api/v1/jobs` — 列出任务（内存运行中优先 + 持久库历史；含 `rows`/`rounds` 记录数）
+- `GET /api/v1/jobs` — 列出任务（内存运行中优先 + 持久库历史；含 `rows` 记录行数）
 - `POST /api/v1/jobs` — 创建（JSON 或 multipart）
 - `GET /api/v1/jobs/{id}` — 状态；`?include=results` 带结果（持久库任务返回全历史，行含 `at`）
-- `GET /api/v1/jobs/{id}/rounds` — 轮次摘要
 - `GET /api/v1/jobs/{id}/events` — SSE
-- `GET /api/v1/jobs/{id}/export.csv` / `export.json` — 下载全历史（持续任务 CSV 带「轮次」列、行尾「时间」列）
+- `GET /api/v1/jobs/{id}/export.csv` / `export.json` — 下载全历史（行尾「时间」列，无轮次概念）
 - `POST /api/v1/jobs/{id}/cancel` — 取消（含 Continuous）
 - `DELETE /api/v1/jobs/{id}` — 手动清理（内存 + 持久库）
 
 创建常用字段：`servers`（主 DNS，数组或逗号串；优先于 `dns1`/`dns2`）、`mode`（`query`/`compare`/`expect`）、`name`+`type` 或 `list`、`expected`（expect+单域名必填）、`qps`（默认 **10**，`0`=不限）、`continuous` + `interval_ms`、`workers`、协议选项、可选 `output_dir`（服务端落盘）。
 
-Web 记录列表：**运行中 / 已完成分栏**，展示任务开始时间、记录数（行数/轮次）、查询模式。
+Web 记录列表：**运行中 / 已完成分栏**，展示任务开始时间、记录数（行数）、查询模式；任务执行记录额外显示任务名 + JobID。
 
 **Tasks**（永久定义）
 

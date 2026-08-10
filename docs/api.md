@@ -10,19 +10,18 @@
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/v1/jobs` | 列出任务：内存（运行中/近期）优先，持久库补充历史；`rows`/`rounds` 为记录数 |
+| `GET` | `/api/v1/jobs` | 列出任务：内存（运行中/近期）优先，持久库补充历史；`rows` 为记录行数 |
 | `POST` | `/api/v1/jobs` | 创建；JSON 或 multipart；`201 {"id"}` |
-| `GET` | `/api/v1/jobs/{id}` | 状态；`?include=results` 带结果数组（持久库任务返回全历史，每行含 `at` 时间；持续任务另含 `rounds_results` 按轮结果与 `rounds_info` 轮次摘要） |
-| `GET` | `/api/v1/jobs/{id}/rounds` | 轮次摘要（持续任务多轮历史） |
+| `GET` | `/api/v1/jobs/{id}` | 状态；`?include=results` 带结果数组（持久库任务返回全历史，每行含 `at` 时间） |
 | `GET` | `/api/v1/jobs/{id}/events` | SSE 进度事件 |
-| `GET` | `/api/v1/jobs/{id}/export.csv` | 下载 CSV（全历史；持续任务带「轮次」列，行尾「时间」列） |
+| `GET` | `/api/v1/jobs/{id}/export.csv` | 下载 CSV（全历史，行尾「时间」列；无轮次概念） |
 | `GET` | `/api/v1/jobs/{id}/export.json` | 下载 JSON（全历史，行含 `at`） |
 | `POST` | `/api/v1/jobs/{id}/cancel` | 取消（含 Continuous） |
 | `DELETE` | `/api/v1/jobs/{id}` | 手动清理：内存 + 持久库 + SSE 缓冲 |
 
 > **持久库**（`dnsprobe serve --store`，默认 `~/.dnsprobe/runs.db`，bbolt 单文件）：批量/持续任务自动落库，可回查全历史并带每行拨测时间（`at`）；单条域名查询不落库。`--store off` 关闭（退回纯内存）。持久库默认 7 天自动清理（`--store-retention` 可调，`0` 不清理）。
 >
-> job 列表/详情附带 `name`（拨测对象：首条域名 + 条数）、`rows`/`rounds`（记录数/轮次）、`rounds_info`/`rounds_results`（轮次摘要/按轮结果）；由永久任务触发的 job 额外带 `task_name`/`task_id`（来源任务）。
+> job 列表/详情附带 `name`（拨测对象：首条域名 + 条数）、`rows`（展开后记录行数，多 DNS 扇出每行）；由永久任务触发的 job 额外带 `task_name`/`task_id`（来源任务）。记录模型为「一行结果 + 时间戳」，不引入轮次。
 >
 > **内存保留策略**：job 记录默认最多保留 **200** 个，结束态超过 **24h** 自动淘汰（`--job-max / --job-max-age` 可调，设 `0` 不限制）；运行中的任务不受影响。
 
@@ -41,7 +40,7 @@
 | `interval_ms` | number | 轮间间隔 |
 | `workers` | number | 并发（服务端默认同 job）；**Web 上限 100** |
 
-列表/详情响应新增字段：`name`（拨测对象，批量取首条+条数）、`rows`/`rounds`（展开后记录数/轮次）、`rounds_info`（轮次摘要）、`rounds_results`（持续任务按轮结果，前端按轮展示）。
+列表/详情响应新增字段：`name`（拨测对象，批量取首条+条数）、`rows`（展开后记录行数）、`task_name`/`task_id`（任务执行来源）。
 | `timeout_ms` / `retries` / `retry_interval_ms` / `rd` / `tcp` / `edns` / `subnet` | | 协议选项 |
 | `output_dir` | string | 可选：在**服务端**该目录写详情 CSV（本机场景；默认仅内存供 export） |
 
