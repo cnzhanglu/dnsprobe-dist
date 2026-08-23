@@ -4,6 +4,31 @@
 
 ## 下载
 
+### 一键安装 / 更新（Linux、macOS、FreeBSD）
+
+默认安装到 `/usr/local/bin/dnsprobe`；重复执行即检查并更新到 latest Release：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cnzhanglu/dnsprobe-dist/main/install.sh | sudo bash
+```
+
+自定义安装位置（无需 root）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cnzhanglu/dnsprobe-dist/main/install.sh | \
+  DNSPROBE_INSTALL_BIN="$HOME/.local/bin/dnsprobe" bash
+```
+
+systemd 服务更新时可同时重启并在失败时回滚：
+
+```bash
+sudo DNSPROBE_INSTALL_BIN=/opt/dnsprobe/dnsprobe DNSPROBE_SERVICE=dnsprobe ./install.sh
+```
+
+脚本会先读取 Release 的 `SHA256SUMS`；本机已是最新版时不会重复下载二进制。新文件通过校验且可执行后才替换旧文件。
+
+### 手动下载
+
 到 [Releases](https://github.com/cnzhanglu/dnsprobe-dist/releases) 选择对应平台：
 
 | 平台 | 文件 |
