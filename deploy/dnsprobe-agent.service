@@ -1,0 +1,26 @@
+[Unit]
+Description=dnsprobe remote probe agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dnsprobe-agent
+Group=dnsprobe-agent
+EnvironmentFile=/etc/dnsprobe-agent/agent.env
+WorkingDirectory=/var/lib/dnsprobe-agent
+ExecStart=/opt/dnsprobe-agent/bin/dnsprobe-agent
+Restart=always
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dnsprobe-agent
+CapabilityBoundingSet=
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

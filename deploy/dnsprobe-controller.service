@@ -1,0 +1,26 @@
+[Unit]
+Description=dnsprobe multi-node controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dnsprobe-controller
+Group=dnsprobe-controller
+EnvironmentFile=/etc/dnsprobe-controller/controller.env
+WorkingDirectory=/var/lib/dnsprobe-controller
+ExecStart=/opt/dnsprobe-controller/bin/dnsprobe-controller serve --addr 127.0.0.1:2082
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dnsprobe-controller
+CapabilityBoundingSet=
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

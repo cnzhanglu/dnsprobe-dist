@@ -1,0 +1,50 @@
+# dnsprobe Web API systemd 服务（Linux）
+#
+# 安装步骤：
+#   1) 把二进制放到 /opt/dnsprobe/dnsprobe 并 chmod +x
+#   2) 创建运行用户（如需本机部署可改用现有用户并去掉 User/Group）：
+#        sudo useradd --system --home /opt/dnsprobe --shell /usr/sbin/nologin dnsprobe
+#        sudo mkdir -p /opt/dnsprobe && sudo chown dnsprobe:dnsprobe /opt/dnsprobe
+#   3) 配置 token（可选）：sudo vim /etc/dnsprobe.env
+#        DNSPROBE_TOKEN=your-secret-token
+#   4) sudo cp deploy/dnsprobe.service /etc/systemd/system/
+#   5) sudo systemctl daemon-reload && sudo systemctl enable --now dnsprobe
+#
+# 说明：
+#   - 拨测结果默认落库 ~/.dnsprobe/runs.db（bbolt 单文件），7 天自动清理；
+#     如需改路径/保留时长，在 ExecStart 追加 --store / --store-retention。
+#   - 只绑定 127.0.0.1；远程访问请在 ExecStart 加 --listen 0.0.0.0:8080 并配置 token。
+#   - 连续任务停止前给 15s 收尾（本轮的记录/CSV 落盘）。
+
+[Unit]
+Description=dnsprobe Web API (DNS 拨测)
+Documentation=https://github.com/your-org/dnsprobe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dnsprobe
+Group=dnsprobe
+WorkingDirectory=/opt/dnsprobe
+# token 走 EnvironmentFile，避免明文进进程参数；文件不存在也不报错（- 前缀）
+EnvironmentFile=-/etc/dnsprobe.env
+ExecStart=/opt/dnsprobe/dnsprobe serve --listen 127.0.0.1:8080
+Restart=on-failure
+RestartSec=5
+# 崩溃/被 OOM kill 也自动拉起
+StartLimitIntervalSec=60
+StartLimitBurst=5
+LimitNOFILE=65536
+TimeoutStopSec=15
+KillSignal=SIGTERM
+
+# 加固（可选）：按需启用
+#NoNewPrivileges=true
+#PrivateTmp=true
+#ProtectSystem=full
+#ProtectHome=true
+#ReadOnlyPaths=/opt/dnsprobe
+
+[Install]
+WantedBy=multi-user.target
