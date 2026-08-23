@@ -156,6 +156,42 @@
 
 
 
+### 4.6 `/port` — 端口高速探测
+
+`/port` 为独立的端口探测入口（引擎见 `internal/portprobe`），与 DNS job 互斥运行：任一运行中，另一个入口拒绝启动。
+
+| 命令 | 行为 |
+|------|------|
+| `/port` | 有目标+源直接启动；否则显示配置摘要与用法 |
+| `/port list <path>` | 载入目标 CSV（`ip,port` 两列即可，其余列透传） |
+| `/port sources <ips|auto>` | 设置源 IP（可选；空格/英文逗号/Tab；`auto`=枚举本机；**不设=默认路由模式**，不绑定源地址） |
+| `/port workers N` | 并发 worker 数（默认 200） |
+| `/port timeout D` | 单次探测超时（默认 3s） |
+| `/port retries N` | 失败/超时重试次数，不含首次（默认 3） |
+| `/port retry-interval D` | 重试间隔（默认 1s） |
+| `/port qps N|off` | 每源 IP QPS（**默认 off=不限速**，与 DNS 默认 10 不同） |
+| `/port node NAME` | 节点名（默认主机名） |
+| `/port out [path|clear]` | 输出 CSV 路径（默认 cwd `<node>_<ts>_long.csv`） |
+| `/port run` | 启动探测（后台跑，进度回传日志行；无源也启动，走默认路由） |
+| `/port paste`（或 `/port p`） | 多行粘贴目标（Enter 换行、F2/Ctrl+D 结束、Esc 取消；支持逗号/空格/Tab 分隔；源已配置则直接执行） |
+| `/port stop` | 取消（已完成结果仍写盘）；`/stop` 也会一并取消 |
+| `/port clear` | 清空已载入目标与源 |
+| `/port status` | 查看当前配置摘要 |
+
+结束时打印汇总（按源统计 OK/FAIL/TIMEOUT/SKIP + 多源不一致行）并写长表 CSV。状态：`OK` / `FAIL` / `TIMEOUT` / `SKIP`（SKIP=目标无效、地址族不匹配、端口越界）。`port=0` 走 ICMP ping（依赖系统 `ping`）。
+
+> **独立向导**：`dnsprobe port-ui` 打开与 DNS TUI 完全独立的端口探测向导页面（手动粘贴目标 / 读取 CSV 文件 → 源 IP 选择，**默认 0=默认路由**（不绑定源）或勾选本机 IP → 参数引导 → 执行 → 写长表 CSV），适合不想记斜杠命令的场景。
+
+### 4.7 `/http` — HTTP/HTTPS 探测
+
+```text
+/http <URL...> [method=GET] [host=example.com] [header=Key:Value]
+      [body=…] [timeout=10s] [workers=20] [follow=on] [insecure=off]
+```
+
+可在一条命令中放多个 URL；省略 scheme 时默认 HTTPS。探测在后台运行，结果写入终端主缓冲，`/stop` 可取消。参数仅作用于本次，不写入 DNS 会话或任务。
+
+---
 ## 5. Dig 风格查询行（非斜杠）
 
 不以 `/` 开头的行按 dig 风格解析。协议参数经 `probe.ParseDigQuery`；展示/循环参数由 TUI 先剥离。
@@ -381,7 +417,7 @@ example.com -t AAAA
 
 **expect**：任务可持久化 `mode=expect`。
 
-- **list /batch**：清单行 `domain type [tag] [expected]`；第 4 列预期，多项 `,` 分隔；缺列/空 → 运行时判「不符合预期」（不报错）。
+- **list /batch**：清单行 `domain type [tag] [expected]`；第 4 列预期可包含空格并延续到行尾，多项 `,` 分隔；缺列/空 → 运行时判「不符合预期」（不报错）。
 - **domain 目标**：必须设置 `expected=`（向导/`/task set`/编辑菜单）；保存与 `/run` 前校验，缺预期直接报错。
 - **敲域名**：`example.com A expected=1.2.3.4` 或四列同款；无预期则报错，**不** silent dig。
 - 判定：实际答案均落在预期集合内（actual ⊆ expected）→ `符合预期`，否则 → `不符合预期`。第 3 列标签忽略。

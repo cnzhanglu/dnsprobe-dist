@@ -68,6 +68,19 @@ example.com TXT
 
 默认写出详情到 **cwd**（或 `--outdir`）自动命名 `{mode}-{name}-{ts}.csv`；`--no-detail` 仅 stdout。`--vs`/`--expect` 为 `--mode` 别名。`--fail-on-mismatch` 便于 CI。默认 workers：`20`；QPS 默认 `10`/DNS。
 
+### `port` — 端口高速探测（TCP/ICMP）
+
+从指定源 IP 对目标 `(IP, port)` 做 TCP 连通性探测，`port=0` 走 ICMP ping；输出「目标 × 源 IP」合并长表 CSV（或 `--json`）。目标输入只需 `ip,port` 两列，其余列原样透传（兼容 probePort targets CSV）；**支持逗号 / Tab / 空格分隔（自动探测），源 IP 同样支持三种分隔**。**源 IP 可选**：缺省走默认路由（不绑定源地址，由内核选出口，长表 `source_ip` 记录实际出口），显式指定才从指定源探测。
+
+不想记参数？用独立向导 `dnsprobe port-ui`：手动粘贴目标或读取 CSV 文件 → 源 IP 选择（默认 0=默认路由，也可勾选本机 IP）→ 参数引导 → 执行并写长表 CSV。
+
+```bash
+./dnsprobe port --input targets.csv --sources "10.1.1.1 10.1.1.2" --node GTM01
+./dnsprobe port -f targets.csv --sources 127.0.0.1 --retries 0 --out-dir results/
+./dnsprobe port --input t.csv --json   # JSON 输出
+```
+
+默认并发 `200`、单次超时 `3s`、重试 `3`（不含首次）、QPS `0=不限速`（高速探测，与 DNS 默认 10 不同）。结果默认写 **cwd** `<node>_<ts>_long.csv`。长表列：透传列 + `probe_node, probe_time, family, source_ip, status, latency_ms, error, local_port`；状态 `OK/FAIL/TIMEOUT/SKIP`。
 ### `task` — 永久任务（`~/.dnsprobe/tasks`）
 
 ```bash
@@ -150,6 +163,10 @@ export DNSPROBE_TOKEN='your-secret'
 ```
 
 在监听地址打开 UI（如 `http://127.0.0.1:8080`）。API 前缀 `/api/v1`。更完整的字段说明见 **[docs/api.md](docs/api.md)**。
+
+Web 标签可直接通过 `/dns`、`/tcp`、`/http` 访问和分享，标签切换会同步更新地址栏，并支持浏览器前进/后退。三个探测页会分别在当前浏览器保存表单草稿，刷新或切换标签不会丢失；点击「清空输入」可恢复该页默认值，拨测结果与历史记录不受影响。
+
+HTTP 页以“最终请求 URL”为唯一实际输入；批量 IP/主机名生成器会实时预览补齐协议、端口和路径后的 URL，可去重后追加或替换到最终输入框。IPv6 会自动补方括号，生成器中已经写成完整 `http://` / `https://` URL 的行保持原样。
 
 ### 安全说明
 

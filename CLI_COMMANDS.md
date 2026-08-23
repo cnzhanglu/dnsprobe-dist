@@ -14,6 +14,9 @@ dnsprobe tui
 dnsprobe query   […]            → 单次 dig（多 DNS 时每服务器一行）
 dnsprobe vs      […]            → 双 DNS 对比（shim；推荐 run --mode compare）
 dnsprobe run     […]            → 批量 / 单域名 job（主路径）
+dnsprobe port    […]            → 端口高速探测（TCP；port=0 ICMP ping）
+dnsprobe port-ui                → 端口探测交互向导（独立页面：粘贴/CSV、勾选源 IP、参数引导）
+dnsprobe http    […]            → HTTP/HTTPS 单个或批量探测（Host/Header/Method/Body）
 dnsprobe task    <subcommand>   → 永久任务 CRUD / run
 dnsprobe serve   […]            → 嵌入式 Web API + UI
 dnsprobe config  <subcommand>   → 配置路径 / show / set / clean
@@ -154,7 +157,7 @@ dnsprobe run --mode query|compare|expect \
 
 - `compare`：`len(dns) >= 2`，否则报错退出。
 - `expect` + `--domain`：必须 `--expected`；缺则错误、不 dig。
-- `expect` + list：用清单第 4 列；缺列 / 空 → 运行时「不符合预期」（不因此拒绝启动）。
+- `expect` + list：用清单第 4 列；该列可包含空格并延续到行尾。缺列 / 空 → 运行时「不符合预期」（不因此拒绝启动）。
 - 默认写出详情：有 `-o` 用该路径；否则在 `--outdir`（默认 cwd）自动命名。`--no-detail` 仅 stdout。
 - `--watch`：同文件按轮追加；Ctrl+C 取消不截断已写内容。
 - stdin：`-f -` 等价临时 batch（不进 taskstore）。
@@ -172,7 +175,15 @@ dnsprobe run --vs --dns 8.8.8.8,1.1.1.1 --domain example.com --fail-on-mismatch
 
 ---
 
-## 6. `task` — 永久任务
+## 6. `http` — HTTP/HTTPS 批量探测
+
+```bash
+dnsprobe http [URL...] [-f urls.txt] [--host NAME] [--header 'Key: Value']
+```
+
+地址尾参或 `-f` 清单二选一；`-f -` 读 stdin，一行一个地址，省略 scheme 时默认 `https://`。支持 `--method`、`--body`、可重复 `--header`、`--timeout`、`--workers`、`--follow` 与 `--insecure`。默认打印状态码、耗时和 URL；`-o result.csv` 输出详情。
+
+## 7. `task` — 永久任务
 
 存储：`~/.dnsprobe/tasks/*.json`（`DNSPROBE_HOME` 可覆盖）。镜像 TUI `/task`。
 
@@ -227,6 +238,43 @@ dnsprobe task run check --watch --interval 5s --qps 5
 
 ---
 
+## 7. `port` — 端口高速探测
+
+```text
+dnsprobe port --input targets.csv [--sources "ip1 ip2 …"] [选项]
+```
+
+从指定源 IP 对目标 `(IP, port)` 做 TCP 连通性探测，`port=0` 走 ICMP ping；输出「目标 × 源 IP」合并长表 CSV（或 `--json`）。核心引擎见 `internal/portprobe`（独立于 DNS 引擎）。
+
+| Flag | 语义 | 默认 |
+|------|------|------|
+| `--input <文件>` / `-f <文件>` | 目标 CSV（`ip,port` 两列即可，其余列透传；`-f -` 读 stdin） | 必填 |
+| `--sources <列表>` | 源 IP，空格/英文逗号分隔（**拒中文分隔符**）；**缺省为空=默认路由模式**（不绑定源地址，内核按路由选出口） | 空（默认路由） |
+| `--pick-sources` | 强制交互式选择源 IP（可选） | false |
+| `--node <名称>` | 节点名（多机聚合键） | 主机名 |
+| `--workers <数量>` | 并发 worker 数 | 200 |
+| `--timeout <时长>` | 单次探测超时 | 3s |
+| `--retries <次数>` | 失败/超时后的重试次数（不含首次） | 3 |
+| `--retry-interval <时长>` | 重试间隔 | 1s |
+| `--qps <每秒>` | 每源 IP QPS（**0=不限速，默认**；与 DNS 默认 10 不同） | 0 |
+| `--out <前缀>` | 输出前缀 → `<前缀>_long.csv`（或 `<前缀>.json`） | `<node>_<ts>` |
+| `--out-dir <目录>` | 输出目录（默认 **cwd**，禁止默认 `~/.dnsprobe`） | `.` |
+| `--json` | 输出 JSON 而非长表 CSV | false |
+
+长表列（固定，对齐 probePort `*_long.csv`）：输入透传列 + `probe_node, probe_time, family, source_ip, status, latency_ms, error, local_port`。
+
+状态：`OK` / `FAIL` / `TIMEOUT` / `SKIP`（SKIP=目标无效、地址族不匹配、端口越界）。Ctrl+C 可中断并写出已完成结果。
+
+```bash
+# 单源探测本地 listener
+dnsprobe port --input targets.csv --sources 127.0.0.1 --retries 0
+# 多源 + 指定节点 + 输出目录
+dnsprobe port -f targets.csv --sources "10.1.1.1 10.1.1.2 2409:871e::1" --node GTM01 --out-dir results/
+```
+
+> 拨测列表获取（Postgres）与聚合分析（DuckDB）为**专项扩展**：前者产出同格式 CSV 即可，后者直接消费长表列序，均不侵入核心。
+>
+> 目标输入**支持三种分隔符**（自动探测）：逗号 CSV / Tab / 空格（段内兼容英文逗号）；源 IP 支持空格、英文逗号、Tab 分隔，且**不是必填**——缺省走默认路由（不绑定源，长表 `source_ip` 记录内核实际选择的出口 IP）。交互式向导用 `dnsprobe port-ui`（独立 TUI 页面：手动粘贴 / 读 CSV 文件、本机源 IP 勾选（默认 0=默认路由）、参数引导）。
 ## 7. `config`
 
 ```text

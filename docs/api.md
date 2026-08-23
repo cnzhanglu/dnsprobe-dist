@@ -103,8 +103,8 @@ paths:
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | `GET` | `/api/v1/tasks` | 列表 |
-| `GET` | `/api/v1/tasks?name=` | 按名称取一条 |
-| `GET` | `/api/v1/tasks/{id}` | 详情 |
+| `GET` | `/api/v1/tasks?name=` | 按名称取一条；Web 托管列表附带 `list` 正文 |
+| `GET` | `/api/v1/tasks/{id}` | 详情；Web 托管列表附带 `list` 正文 |
 | `POST` | `/api/v1/tasks` | 创建；`201` + Task |
 | `PUT`/`PATCH` | `/api/v1/tasks/{id}` | 更新（未传字段保留） |
 | `DELETE` | `/api/v1/tasks/{id}` | 删除 |
@@ -116,6 +116,7 @@ paths:
 
 - 内联 `list`：服务端写入 `tasks/lists/<id>.txt` 并填 `list_path`。
 - `list_path`：表示**服务端本地路径**。
+- `list` 仅在单任务详情且 `list_path` 为该任务自己的 `tasks/lists/<id>.txt` 时返回；任务列表及外部 `list_path` 不返回文件正文。
 - `continuous` **不**写入任务；仅在 `…/run` 的 body 覆盖。
 
 ### `POST …/run` body（可选覆盖）
@@ -146,6 +147,62 @@ paths:
 
 ---
 
+---
+
+## HTTP/HTTPS 探测（`POST /api/v1/httpprobe`）
+
+同步执行一批地址并返回 `results`；单次最多 1000 个地址。`list` 为一行一个 URL（省略 scheme 默认 HTTPS），也可传 `targets` 数组。`protocol` 当前接受 `http` / `https`，作为后续协议实现的分发入口。
+
+```json
+{
+  "protocol": "http",
+  "list": "https://example.com/health\napi.example.com/status",
+  "method": "GET",
+  "host": "origin.example.com",
+  "headers": {"X-Probe": "web"},
+  "body": "",
+  "timeout_ms": 10000,
+  "workers": 20,
+  "follow_redirects": false,
+  "insecure_tls": false
+}
+```
+
+结果字段包括 `url`、`final_url`、`protocol`、`status_code`、`status`、`latency_ms`、`body_bytes`、`body_preview`、`body_truncated`、`body_binary`、`content_type`、`server`、`error`、`at`。文本响应最多预览前 16 KiB；超长或二进制响应会明确标记，避免批量任务占用过多内存。
+
+当 `host` 非空时，共享引擎会同时将其写入 HTTP Host 头和 TLS ClientHello SNI（自动去掉端口）。因此可用 IP 建立连接，并按指定域名完成虚拟主机路由与证书校验；Web、TUI、CLI 语义一致。
+
+## Portprobe（端口探测，`/api/v1/portprobe`）
+
+与 DNS job 完全独立的进程内会话注册表（纯内存，**不进 runs.db / SSE hub**）：`POST` 创建后在后台跑，前端/脚本轮询 `GET` 详情。内存最多保留最近 **100** 个会话，超出淘汰最旧结束态。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/v1/portprobe` | 创建会话；`201 {"id"}` |
+| `GET` | `/api/v1/portprobe` | 会话列表（新建在前，不含 results） |
+| `GET` | `/api/v1/portprobe/sources` | 本机可探测源 IP（`{sources:[{ip,iface,is_v6}]}`，前端勾选用） |
+| `GET` | `/api/v1/portprobe/{id}` | 会话详情（含 `results`） |
+| `POST` | `/api/v1/portprobe/{id}/cancel` | 取消（已完成结果保留） |
+| `GET` | `/api/v1/portprobe/{id}/export.csv` | 长表 CSV 下载 |
+
+### `POST /portprobe` body
+
+| 字段 | 类型 | 语义 | 上限/默认 |
+|------|------|------|-----------|
+| `targets` | `[{ip,port,meta?}]` | 目标数组（与 `list` 二选一） | ≤5000 |
+| `list` | string | 目标文本（`ip,port[,备注]` 行；**支持逗号/Tab/空格分隔，自动探测**） | ≤5000 行 |
+| `sources` | `string[]` | 源 IP（可选，与 `sources_raw` 二选一）；**缺省为空=默认路由模式**（不绑定源，`results[].source_ip` 记录内核实际出口） | ≤16 |
+| `sources_raw` | string | 源 IP 字符串（空格/英文逗号/Tab；**拒中文分隔符**） | ≤16 |
+| `workers` | int | 并发 | 1–200（默认 200） |
+| `timeout_ms` | int | 单次超时 | 1–10000（默认 3000） |
+| `retries` | int | 重试次数（不含首次） | 0–10（默认 3） |
+| `retry_interval_ms` | int | 重试间隔 | 0–60000（默认 1000） |
+| `node` | string | 节点名 | 缺省主机名 |
+| `qps` | number | 每源 IP QPS | 0=不限速（默认） |
+
+详情/列表响应含：`id, status(running/finished/cancelled/error), node, created_at, started_at, finished_at, error, total, done, stats{OK,FAIL,TIMEOUT,SKIP}, inconsistent, targets, sources, results`。`results[]` 字段：`status, latency_ms, error, local_port, source_ip, at`。`port=0` 走 ICMP ping（依赖系统 `ping`）。
+
+---
 ## 明确不做
 
 - 不暴露改 `config.json` / `config clean` 的通用 API。
