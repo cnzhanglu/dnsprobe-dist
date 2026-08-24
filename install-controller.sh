@@ -43,7 +43,9 @@ id dnsprobe-controller >/dev/null 2>&1 || useradd --system --gid dnsprobe-contro
 install -d -o root -g root -m 0755 "$INSTALL_ROOT/bin"
 install -d -o dnsprobe-controller -g dnsprobe-controller -m 0700 "$DATA_DIR"
 install -d -o root -g dnsprobe-controller -m 0750 "$ENV_DIR"
-install -o root -g root -m 0755 "$tmp_dir/$asset" "$INSTALL_ROOT/bin/dnsprobe-controller"
+# 同目录原子替换，避免直接截断正在运行的 ELF 在部分文件系统上留下损坏文件。
+install -o root -g root -m 0755 "$tmp_dir/$asset" "$INSTALL_ROOT/bin/dnsprobe-controller.new"
+mv -f "$INSTALL_ROOT/bin/dnsprobe-controller.new" "$INSTALL_ROOT/bin/dnsprobe-controller"
 
 if [[ ! -f "$ENV_DIR/controller.env" ]]; then
   printf 'DNSPROBE_CONTROLLER_DATA=%s\n' "$DATA_DIR" > "$ENV_DIR/controller.env"

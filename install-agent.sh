@@ -46,7 +46,9 @@ id dnsprobe-agent >/dev/null 2>&1 || useradd --system --gid dnsprobe-agent --hom
 install -d -o root -g root -m 0755 "$INSTALL_ROOT/bin"
 install -d -o dnsprobe-agent -g dnsprobe-agent -m 0700 "$DATA_DIR"
 install -d -o root -g dnsprobe-agent -m 0750 "$ENV_DIR"
-install -o root -g root -m 0755 "$tmp_dir/$asset" "$INSTALL_ROOT/bin/dnsprobe-agent"
+# 同目录原子替换，避免直接截断正在运行的 ELF 在部分文件系统上留下损坏文件。
+install -o root -g root -m 0755 "$tmp_dir/$asset" "$INSTALL_ROOT/bin/dnsprobe-agent.new"
+mv -f "$INSTALL_ROOT/bin/dnsprobe-agent.new" "$INSTALL_ROOT/bin/dnsprobe-agent"
 
 if [[ ! -f "$ENV_DIR/agent.env" ]]; then
   [[ -n "$CONTROLLER_URL" && -n "$NODE_TOKEN" && -n "$NODE_NAME" ]] || {
