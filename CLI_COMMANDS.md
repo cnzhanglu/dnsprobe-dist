@@ -308,7 +308,7 @@ dnsprobe serve [--listen :8080] [--token TOKEN]
 - 无 token（且无 `DNSPROBE_TOKEN`）：强制绑定 **127.0.0.1**。
 - 有 token：按 `--listen` 监听；`/api/*` 需 `Authorization: Bearer <token>`（SSE 可用 `?token=`）。
 - Web 顶栏的“公网 IP”显示 serve 服务器的出口 IPv4/IPv6；首次打开时查询，成功结果缓存 30 分钟。
-- 默认查询 `https://api.ipify.org` 与 `https://api6.ipify.org`。可用同名参数覆盖，也可设置 `DNSPROBE_PUBLIC_IPV4_URL` / `DNSPROBE_PUBLIC_IPV6_URL`（参数优先）；值为 `off` 时禁用对应协议族。
+- 默认查询 Cloudflare 官方的 `https://ipv4.icanhazip.com` 与 `https://ipv6.icanhazip.com`。可用同名参数覆盖，也可设置 `DNSPROBE_PUBLIC_IPV4_URL` / `DNSPROBE_PUBLIC_IPV6_URL`（参数优先）；值为 `off` 时禁用对应协议族。
 - 查询失败只影响对应地址显示，不影响 serve 或拨测；失败项不会自动重试，可在弹窗中手动刷新。
 
 API 细节见 [docs/api.md](docs/api.md) 与 README「Web」。
