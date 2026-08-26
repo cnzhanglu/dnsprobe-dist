@@ -6,6 +6,25 @@
 
 ---
 
+## serve 公网地址
+
+`GET /api/v1/public-ip` 返回运行 serve 的服务器出口公网 IPv4/IPv6。配置 Token 时该接口与其他 `/api/*` 一样需要 Bearer 鉴权；无 Token 的 localhost 模式免认证。
+
+```json
+{
+  "ipv4": {"address":"198.51.100.8","status":"ok","checked_at":"2026-08-26T10:00:00Z","stale":false},
+  "ipv6": {"status":"unavailable","checked_at":"2026-08-26T10:00:05Z","stale":false,"error":"查询失败: ..."}
+}
+```
+
+- 状态为 `pending`、`ok`、`unavailable` 或 `disabled`；IPv4/IPv6 独立处理。
+- 成功地址缓存 30 分钟。首次失败后不再自动访问对应端点，`GET /api/v1/public-ip?refresh=1` 可手动重试。
+- 曾成功的地址在后续查询失败时保留，并设置 `stale: true`。
+- 默认端点为 `https://api.ipify.org` 与 `https://api6.ipify.org`；serve 参数 `--public-ipv4-url` / `--public-ipv6-url` 或环境变量 `DNSPROBE_PUBLIC_IPV4_URL` / `DNSPROBE_PUBLIC_IPV6_URL` 可覆盖，值为 `off` 时禁用。
+- 外部查询失败只影响该接口，不影响 serve 启动、健康状态或拨测任务。
+
+---
+
 ## Jobs
 
 | 方法 | 路径 | 说明 |
