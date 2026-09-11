@@ -60,7 +60,7 @@
 | --------- | ---------------------------- | ------------------------------------------------------------------------- |
 | `query`   | `q`, `single`                | 查询（默认）。会话 1 DNS 或行内 `@x` → dig；会话 ≥2 DNS 且无行内 `@` → job 扇出                |
 | `compare` | `vs`, `batch`†               | 多 DNS 对比；需 ≥2 个服务器（`/dns a,b`）。键入域名启动对比 job                               |
-| `expect`  | `check`                      | 预期判定。敲域名须带 `expected=` 或清单同款第 4 列；list/batch 用第 4 列。判定：`符合预期` / `不符合预期`   |
+| `expect`  | `check`                      | 预期判定。敲域名须带 `expected=` 或清单同款第 4 列；多 DNS 共用该域名预期并逐 DNS 独立判定、统计   |
 | `watch`   | `continuous`, `cont`, `loop` | 持续循环：语义同当前草稿 query/compare/expect（dig watch 或 job 重跑），直到 `/stop` 或 Ctrl+C |
 
 

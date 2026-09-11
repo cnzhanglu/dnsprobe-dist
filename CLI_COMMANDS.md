@@ -158,6 +158,7 @@ dnsprobe run --mode query|compare|expect \
 - `compare`：`len(dns) >= 2`，否则报错退出。
 - `expect` + `--domain`：必须 `--expected`；缺则错误、不 dig。
 - `expect` + list：用清单第 4 列；该列可包含空格并延续到行尾。缺列 / 空 → 运行时「不符合预期」（不因此拒绝启动）。
+- `expect` + 多 DNS：同一域名共用其预期集合，每个“域名 × DNS”独立判定并计入 `total/done/matched/mismatch`。
 - 默认写出详情：有 `-o` 用该路径；否则在 `--outdir`（默认 cwd）自动命名。`--no-detail` 仅 stdout。
 - `--watch`：同文件按轮追加；Ctrl+C 取消不截断已写内容。
 - stdin：`-f -` 等价临时 batch（不进 taskstore）。

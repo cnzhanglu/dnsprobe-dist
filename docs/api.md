@@ -58,10 +58,13 @@
 | `continuous` | bool | watch |
 | `interval_ms` | number | 轮间间隔 |
 | `workers` | number | 并发（服务端默认同 job）；**Web 上限 100** |
-
-列表/详情响应新增字段：`name`（拨测对象，批量取首条+条数）、`rows`（展开后记录行数）、`task_name`/`task_id`（任务执行来源）。
 | `timeout_ms` / `retries` / `retry_interval_ms` / `rd` / `tcp` / `edns` / `subnet` | | 协议选项 |
 | `output_dir` | string | 可选：在**服务端**该目录写详情 CSV（本机场景；默认仅内存供 export） |
+| `task_id` | string | 可选：来源永久任务 id。存在则记录带 `task_name`；找不到则忽略，仍当临时拨测 |
+
+列表/详情响应新增字段：`name`（拨测对象，批量取首条+条数）、`rows`（展开后记录行数）、`task_name`/`task_id`（任务执行来源）。
+
+`expect` 模式配置多个 DNS 时，每个“域名 × DNS”独立判定并计入 `stats`。SSE `item` 事件新增可选 `expects` 数组，顺序与 `servers` 一致；原 `expect` 字段继续表示首 DNS。任务快照和持久化结果的 `expects` 为逐 DNS 展开行。
 
 OpenAPI 风格片段：
 
