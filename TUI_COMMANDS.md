@@ -256,7 +256,7 @@ example.com -t AAAA
 | -------------------------------- | --------------------------------------------------------- |
 | `+watch`                         | 持续（单 DNS dig 用 `watchSpec`；多 DNS/compare/expect 用 job 重跑） |
 | `+once`                          | 只跑一次（覆盖会话 watch）                                          |
-| `+detail`                        | 本次敲域名 job 落 CSV；与 `+watch` 同用时同文件**按轮追加**（`轮次`/`时间`） |
+| `+detail`                        | 本次敲域名 job 落 CSV；与 `+watch` 同用时同文件逐行追加（行尾 `时间`，无 `轮次` 列） |
 | `+brief` / `+short` / `+compact` | 精简输出（**仅单条 dig**）                                         |
 | `+full` / `+dig` / `+default`    | 完整 dig 输出（**仅单条 dig**）                                    |
 | `+qps=<n|off|0>`                 | 本次每 DNS QPS（仅单条 dig）                                      |
@@ -280,7 +280,7 @@ example.com -t AAAA
 | compare + ≥2              | compare job（单 DNS 拒绝；默认不写 CSV）       |
 | expect + 可解析预期            | expect job；否则**明确报错**，禁止 silent dig |
 | watch + 上述                | 同语义：**引擎 Continuous 单 job** 循环（非 Finished 重跑） |
-| 同上且 `+detail` 或 `/detail on` | 落盘；**同文件按轮追加**（`轮次`/`时间` 列），禁止每轮新文件、禁止结束时截断 |
+| 同上且 `+detail` 或 `/detail on` | 落盘；同文件逐行追加（行尾 `时间`，无 `轮次` 列），禁止每轮新文件、禁止结束时截断 |
 
 
 已加载的 `/list` **不会**因键入域名自动跑列表；列表须 `/run`。`/batch` 不提供一键存任务；需要永久任务时用 `/task new` + list。
@@ -290,7 +290,7 @@ example.com -t AAAA
 | 入口 | 默认写文件？ |
 |------|-------------|
 | 敲域名（含 `+watch`） | 否；需 `+detail` 或 `/detail on` |
-| `/run` / `/batch` / `/task run` | 是；watch 时 Continuous 同路径**按轮追加** |
+| `/run` / `/batch` / `/task run` | 是；watch 时 Continuous 同路径逐行追加 |
 | `/outdir` | 只定目录，不单独表示「一定要写」 |
 
 ---
@@ -493,7 +493,7 @@ example.com -t AAAA
 | 规则           | 说明                                                                           |
 | ------------ | ---------------------------------------------------------------------------- |
 | 敲域名默认        | **不写 CSV**（与 dig 一致）；`+detail` 或 `/detail on` 才写                            |
-| `/run` 等          | 自动写 CSV；**watch/continuous** 为**同一文件按轮追加**（含 `轮次`/`时间` 列），不每轮新建 |
+| `/run` 等          | 自动写 CSV；**watch/continuous** 为同一文件逐行追加（行尾 `时间`，无 `轮次` 列），不每轮新建 |
 | watch 模型         | 引擎内 `Continuous` 单 job 循环至 `/stop`；TUI **不再** Finished 后重入 Start           |
 | 默认目录         | **进程 cwd**（`outdir` 为空）                                                      |
 | 自定义          | `/outdir /path` 或任务 `outdir=`（只定目录）                                          |

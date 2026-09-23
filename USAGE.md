@@ -81,7 +81,7 @@ example.com TXT
 ./dnsprobe port --input t.csv --json   # JSON 输出
 ```
 
-默认并发 `200`、单次超时 `3s`、重试 `3`（不含首次）、QPS `0=不限速`（高速探测，与 DNS 默认 10 不同）。结果默认写 **cwd** `<node>_<ts>_long.csv`。长表列：透传列 + `probe_node, probe_time, family, source_ip, status, latency_ms, error, local_port`；状态 `OK/FAIL/TIMEOUT/SKIP`。
+默认并发 `200`、单次超时 `3s`、重试 `3`（不含首次）、QPS `0=不限速`（高速探测，与 DNS 默认 10 不同）。结果默认写 **cwd** `<node>_<ts>_long.csv`。长表列：透传列 + `probe_node, probe_time, target_ip, target_port, family, source_ip, status, latency_ms, error, local_port`；状态 `OK/FAIL/TIMEOUT/SKIP`。
 ### `task` — 永久任务（`~/.dnsprobe/tasks`）
 
 ```bash
@@ -116,7 +116,7 @@ example.com TXT
 
 基于 `reeflective/readline` 的 REPL：不进入 alt-screen；日志进终端 scrollback；提示为 `›` + Hint（状态与全部 DNS）。
 
-要点：行内 `@` / 类型 / dig `+` 只覆盖**本次**，不改会话 DNS/type/opts；query 且会话 ≥2 DNS 时敲域名走 job 扇出（**默认不写 CSV**；`+detail` 或 `/detail on` 才落盘）；`+watch` 为引擎内 Continuous 单 job，落盘时**同文件按轮追加**；行内 `@x` 仍只 dig 该服务器；expect 敲域名须带 `expected=`（或清单第 4 列）。完整场景矩阵与命令见 **[TUI_COMMANDS.md](TUI_COMMANDS.md)**（会话内也可 `/help`）。
+要点：行内 `@` / 类型 / dig `+` 只覆盖**本次**，不改会话 DNS/type/opts；query 且会话 ≥2 DNS 时敲域名走 job 扇出（**默认不写 CSV**；`+detail` 或 `/detail on` 才落盘）；`+watch` 为引擎内 Continuous 单 job，落盘时**同文件逐行追加，行尾记录拨测时间且无轮次列**；行内 `@x` 仍只 dig 该服务器；expect 敲域名须带 `expected=`（或清单第 4 列）。完整场景矩阵与命令见 **[TUI_COMMANDS.md](TUI_COMMANDS.md)**（会话内也可 `/help`）。
 
 ### 演示动图
 

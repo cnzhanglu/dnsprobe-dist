@@ -160,7 +160,7 @@ dnsprobe run --mode query|compare|expect \
 - `expect` + list：用清单第 4 列；该列可包含空格并延续到行尾。缺列 / 空 → 运行时「不符合预期」（不因此拒绝启动）。
 - `expect` + 多 DNS：同一域名共用其预期集合，每个“域名 × DNS”独立判定并计入 `total/done/matched/mismatch`。
 - 默认写出详情：有 `-o` 用该路径；否则在 `--outdir`（默认 cwd）自动命名。`--no-detail` 仅 stdout。
-- `--watch`：同文件按轮追加；Ctrl+C 取消不截断已写内容。
+- `--watch`：同文件逐行追加，行尾记录拨测时间且无轮次列；Ctrl+C 取消不截断已写内容。
 - stdin：`-f -` 等价临时 batch（不进 taskstore）。
 
 示例：
@@ -262,7 +262,7 @@ dnsprobe port --input targets.csv [--sources "ip1 ip2 …"] [选项]
 | `--out-dir <目录>` | 输出目录（默认 **cwd**，禁止默认 `~/.dnsprobe`） | `.` |
 | `--json` | 输出 JSON 而非长表 CSV | false |
 
-长表列（固定，对齐 probePort `*_long.csv`）：输入透传列 + `probe_node, probe_time, family, source_ip, status, latency_ms, error, local_port`。
+长表列（固定，对齐 probePort `*_long.csv`）：输入透传列 + `probe_node, probe_time, target_ip, target_port, family, source_ip, status, latency_ms, error, local_port`。
 
 状态：`OK` / `FAIL` / `TIMEOUT` / `SKIP`（SKIP=目标无效、地址族不匹配、端口越界）。Ctrl+C 可中断并写出已完成结果。
 
@@ -324,7 +324,7 @@ API 细节见 [docs/api.md](docs/api.md) 与 README「Web」。
 | `query` 落盘 | 默认不写；显式 `-o`/`--outdir` |
 | `~/.dnsprobe` | 仅 `config.json`、`history`、`tasks/` |
 | QPS | 非交互 job 默认 **10/DNS**；`0`=不限 |
-| watch | 同详情文件按轮追加；取消保留已写行 |
+| watch | 同详情文件逐行追加（行尾时间、无轮次列）；取消保留已写行 |
 | expect | 单域名必 `--expected`；list 第 4 列；判定 actual ⊆ expected |
 | DNS 主字段 | `--dns` / API `servers`；`dns1`/`dns2` 为 shim |
 | 退出码 | 硬错误 ≠0；`--fail-on-mismatch` 时有 mismatch ≠0；`-h` 为 0 |
